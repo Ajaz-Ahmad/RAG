@@ -1,0 +1,14 @@
+# Core dependencies
+requests
+beautifulsoup4
+openai
+numpy
+faiss-cpu
+rank_bm25
+sentence-transformers
+
+# Config
+pydantic-settings
+
+# Dev
+pytest

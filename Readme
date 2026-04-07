@@ -1,0 +1,4 @@
+python main.py ingest https://en.wikipedia.org/wiki/Diabetes
+
+# Ask a question
+python main.py query "What causes type 2 diabetes?"
