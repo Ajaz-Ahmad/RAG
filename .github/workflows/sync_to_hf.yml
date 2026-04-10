@@ -18,8 +18,14 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to HuggingFace Space
+      - name: Push to HuggingFace Space (history-free)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push https://ajaz1202:${HF_TOKEN}@huggingface.co/spaces/ajaz1202/wikipedia-rag-api main --force
+          # Create a fresh orphan branch containing only the current files.
+          # This strips all git history (including the old data/index.faiss binary)
+          # so HuggingFace's binary-file check never sees it.
+          git checkout --orphan hf-deploy
+          git add -A
+          git commit -m "Deploy to HuggingFace Space"
+          git push https://ajaz1202:${HF_TOKEN}@huggingface.co/spaces/ajaz1202/wikipedia-rag-api hf-deploy:main --force
