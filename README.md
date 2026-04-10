@@ -5,9 +5,13 @@ colorFrom: blue
 colorTo: indigo
 sdk: docker
 pinned: false
+app_port: 7860
 ---
 
 # Wikipedia RAG API
+
+**Live API:** `https://ajaz1202-wikipedia-rag-api.hf.space`  
+**Docs:** `https://ajaz1202-wikipedia-rag-api.hf.space/docs`
 
 A retrieval-augmented generation pipeline that lets you ask questions grounded in any Wikipedia article.
 
