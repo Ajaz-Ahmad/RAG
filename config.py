@@ -12,10 +12,11 @@ class Settings(BaseSettings):
     embedding_api_key: str = "EMPTY"
     embedding_model: str = "text-embedding-3-small"
 
-    # Generation — OpenAI (only API key needed, no GPU required)
-    openai_api_key: str = "EMPTY"
-    openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4o-mini"
+    # Generation — Groq by default (free, no credit card).
+    # Override OPENAI_BASE_URL + OPENAI_MODEL to use any OpenAI-compatible API.
+    openai_api_key: str = "EMPTY"                        # set via OPENAI_API_KEY (Groq or OpenAI key)
+    openai_base_url: str = "https://api.groq.com/openai/v1"
+    openai_model: str = "llama-3.3-70b-versatile"        # free on Groq; swap for gpt-4o-mini if using OpenAI
     temperature: float = 0.2
     max_tokens: int = 512
 

@@ -6,9 +6,9 @@ services:
     startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: OPENAI_API_KEY
-        sync: false          # set manually in Render dashboard
+        sync: false                                    # paste your Groq key here (gsk_...)
+      - key: OPENAI_BASE_URL
+        value: https://api.groq.com/openai/v1
       - key: OPENAI_MODEL
-        value: gpt-4o-mini
-      - key: EMBEDDING_MODEL
-        value: text-embedding-3-small
+        value: llama-3.3-70b-versatile
     healthCheckPath: /health

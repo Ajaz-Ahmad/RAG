@@ -29,8 +29,9 @@ A retrieval-augmented generation pipeline that lets you ask questions grounded i
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | Yes | For answer generation |
-| `OPENAI_MODEL` | No | Defaults to `gpt-4o-mini` |
+| `OPENAI_API_KEY` | Yes | **Groq key** (free at console.groq.com) — starts with `gsk_` |
+| `OPENAI_BASE_URL` | No | Defaults to `https://api.groq.com/openai/v1` |
+| `OPENAI_MODEL` | No | Defaults to `llama-3.3-70b-versatile` |
 
 ## CLI usage (local)
 
