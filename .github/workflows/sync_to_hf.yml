@@ -22,10 +22,15 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Create a fresh orphan branch containing only the current files.
-          # This strips all git history (including the old data/index.faiss binary)
-          # so HuggingFace's binary-file check never sees it.
+          set -e
+
+          # Git identity required to make commits in CI
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+
+          # Orphan branch = single commit, no history, no old binary files
           git checkout --orphan hf-deploy
           git add -A
           git commit -m "Deploy to HuggingFace Space"
+
           git push https://ajaz1202:${HF_TOKEN}@huggingface.co/spaces/ajaz1202/wikipedia-rag-api hf-deploy:main --force
