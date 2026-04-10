@@ -2,10 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Embedding — points at a vLLM server (OpenAI-compatible)
-    embedding_base_url: str = "http://localhost:8000/v1"
-    embedding_api_key: str = "EMPTY"
-    embedding_model: str = ""  # auto-detected from vLLM if left empty
+    # Embedding — defaults to OpenAI; override with EMBEDDING_BASE_URL for vLLM
+    embedding_base_url: str = "https://api.openai.com/v1"
+    embedding_api_key: str = "EMPTY"       # set via EMBEDDING_API_KEY or falls back to openai_api_key
+    embedding_model: str = "text-embedding-3-small"
 
     # Generation — OpenAI or any compatible endpoint
     openai_api_key: str = "EMPTY"
@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     # Persistence
     index_path: str = "data/index.faiss"
     chunks_path: str = "data/chunks.json"
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # If no dedicated embedding key is set, reuse the OpenAI key.
+        if self.embedding_api_key == "EMPTY" and self.openai_api_key != "EMPTY":
+            self.embedding_api_key = self.openai_api_key
 
     class Config:
         env_file = ".env"
