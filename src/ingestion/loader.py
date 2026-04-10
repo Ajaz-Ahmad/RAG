@@ -1,7 +1,8 @@
 import logging
+import re
+import urllib.parse
 
 import requests
-from bs4 import BeautifulSoup
 
 from src.ingestion.dataClasses import WikiChunk
 
@@ -9,70 +10,86 @@ logger = logging.getLogger(__name__)
 
 
 def load_data_from_url(url: str) -> list[WikiChunk]:
-    """Scrape a Wikipedia article and return paragraphs tagged with their section hierarchy.
+    """Fetch a Wikipedia article via the MediaWiki REST API and return section-aware chunks.
 
-    Tries multiple known Wikipedia container selectors so the scraper degrades
-    gracefully if MediaWiki changes its HTML structure.
+    Uses the official API instead of HTML scraping so it works reliably
+    regardless of Wikipedia's front-end HTML changes or IP-based scraping blocks.
     """
-    logger.info("Fetching %s", url)
-    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+    match = re.search(r"en\.wikipedia\.org/wiki/([^#?]+)", url)
+    if not match:
+        raise ValueError(f"Not a valid English Wikipedia URL: {url}")
+
+    title = urllib.parse.unquote(match.group(1).replace("_", " "))
+    logger.info("Fetching '%s' via Wikipedia API", title)
+
+    api_url = (
+        "https://en.wikipedia.org/w/api.php"
+        "?action=query&prop=extracts&explaintext=true"
+        f"&titles={urllib.parse.quote(title)}&format=json"
+    )
+
+    response = requests.get(
+        api_url,
+        headers={"User-Agent": "WikiRAGDemo/1.0 (portfolio project)"},
+        timeout=20,
+    )
     response.raise_for_status()
 
-    soup = BeautifulSoup(response.content, "html.parser")
+    data = response.json()
+    pages = data.get("query", {}).get("pages", {})
+    page = next(iter(pages.values()))
 
-    page_title_el = soup.find("h1")
-    if page_title_el is None:
-        raise ValueError(f"Could not find page title at {url}")
-    page_title = page_title_el.get_text(strip=True)
+    if "missing" in page:
+        raise ValueError(f"Wikipedia article '{title}' not found.")
 
-    # Fallback chain — MediaWiki has changed container IDs across versions
-    container = (
-        soup.find("div", {"id": "mw-content-container"})
-        or soup.find("div", class_="mw-content-container")
-        or soup.find("div", {"id": "bodyContent"})
-        or soup.find("main")
-    )
-    if container is None:
-        raise ValueError(f"Could not locate article body at {url}. Wikipedia may have changed its HTML structure.")
+    page_title = page["title"]
+    text = page.get("extract", "")
 
+    if not text:
+        raise ValueError(f"Wikipedia returned an empty article for '{title}'.")
+
+    chunks = _parse_extract(text, page_title)
+    logger.info("Extracted %d raw chunks from '%s'", len(chunks), page_title)
+    return chunks
+
+
+def _parse_extract(text: str, page_title: str) -> list[WikiChunk]:
+    """Parse MediaWiki plain-text extract into section-aware WikiChunk objects.
+
+    The API encodes headings as:
+      == Section ==
+      === Subsection ===
+    Everything else is a paragraph.
+    """
+    lines = text.split("\n")
     chunks: list[WikiChunk] = []
-    current = WikiChunk(
-        page_title=page_title, level="h1",
-        context="", section="", subsection="", text=""
-    )
+    section = ""
+    subsection = ""
 
-    for el in container.find_all(["h1", "h2", "h3", "h4", "p"]):
-        level = el.name
-        text = el.get_text(strip=True)
-
-        if not text:
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
             continue
 
-        if level != "p":
-            # Heading — advance the section hierarchy
-            if current.section == "":
-                current.section = text
-            elif current.subsection == "":
-                current.subsection = text
-            else:
-                current.context = current.section
-                current.section = current.subsection
-                current.subsection = text
-            current.level = level
+        h2 = re.match(r"^==\s+(.+?)\s+==$", stripped)
+        h3 = re.match(r"^===\s+(.+?)\s+===$", stripped)
+        h4 = re.match(r"^====\s+(.+?)\s+====$", stripped)
+
+        if h4:
+            subsection = h4.group(1)
+        elif h3:
+            subsection = h3.group(1)
+        elif h2:
+            section = h2.group(1)
+            subsection = ""
         else:
-            # Paragraph — emit a chunk
-            current.text = text
+            chunks.append(WikiChunk(
+                page_title=page_title,
+                level="p",
+                context=section,
+                section=section,
+                subsection=subsection,
+                text=stripped,
+            ))
 
-            if current.section == "" and chunks:
-                # Inherit section from previous chunk if still at article preamble
-                current.section = chunks[-1].section
-                current.subsection = chunks[-1].subsection
-
-            chunks.append(current)
-            current = WikiChunk(
-                page_title=page_title, level="h1",
-                context="", section="", subsection="", text=""
-            )
-
-    logger.info("Extracted %d raw chunks from '%s'", len(chunks), page_title)
     return chunks
