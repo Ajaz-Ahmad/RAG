@@ -1,0 +1,25 @@
+name: Sync to HuggingFace Space
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # lets you trigger it manually from GitHub Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global credential.helper store
+          echo "https://ajaz1202:${HF_TOKEN}@huggingface.co" > ~/.git-credentials
+          git remote add hf-space https://huggingface.co/spaces/ajaz1202/wikipedia-rag-api
+          git push hf-space main --force
