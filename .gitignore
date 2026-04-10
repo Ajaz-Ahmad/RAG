@@ -1,1 +1,14 @@
+# Runtime-generated data — never commit these
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Env
 .env
