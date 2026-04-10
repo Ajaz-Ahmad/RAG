@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ && rm -
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 # Install remaining dependencies
-COPY requirements-api.txt .
+COPY requirements.txt requirements-api.txt ./
 RUN pip install --no-cache-dir -r requirements-api.txt
 
 # Pre-download the embedding model so the first request isn't slow
