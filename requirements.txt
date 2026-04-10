@@ -10,5 +10,5 @@ sentence-transformers
 # Config
 pydantic-settings
 
-# Dev
-pytest
+# Dev (not installed in Docker — use pip install pytest separately for local testing)
+# pytest
